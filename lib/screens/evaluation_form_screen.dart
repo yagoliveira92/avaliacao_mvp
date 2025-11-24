@@ -131,9 +131,6 @@ class _EvaluationFormScreenState extends State<EvaluationFormScreen> {
     _controllers.forEach((key, ctrl) {
       double weight = _weights[key] ?? 0.0;
       // Calcula o valor real baseado na nota 0-10
-      double inputVal = double.tryParse(ctrl.text.replaceAll(',', '.')) ?? 0.0;
-      if (inputVal > 10) inputVal = 10;
-      if (inputVal < 0) inputVal = 0;
       total += _displayToWeighted(ctrl.text, weight);
     });
     return total;
@@ -237,7 +234,6 @@ class _EvaluationFormScreenState extends State<EvaluationFormScreen> {
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -375,21 +371,16 @@ class _EvaluationFormScreenState extends State<EvaluationFormScreen> {
                                   vertical: 12,
                                 ),
                                 // Feedback visual se a nota for inválida
-                                errorStyle: TextStyle(
-                                  color: Colors.red,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                errorStyle: const TextStyle(height: 0),
                               ),
                               onChanged: (_) => setState(() {}),
                               validator: (val) {
-                                if (val == null || val.isEmpty)
-                                  return 'Obrigatório';
+                                if (val == null || val.isEmpty) return '';
                                 final n = double.tryParse(
                                   val.replaceAll(',', '.'),
                                 );
-                                if (n == null) return 'Inválido';
-                                if (n < 0) return 'Min 0';
-                                if (n > 10) return 'Máx 10';
+                                if (n == null) return '';
+                                if (n < 0 || n > 10) return ''; // Valida 0 a 10
                                 return null;
                               },
                             ),

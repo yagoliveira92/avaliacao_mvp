@@ -3,7 +3,6 @@ import 'package:avaliacao_mvp/models/team_model.dart';
 import 'package:avaliacao_mvp/screens/evaluation_form_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'grades_result_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   final ProfessorModel professor;
@@ -30,15 +29,6 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.analytics_outlined),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const GradesResultScreen()),
-          );
-        },
       ),
       body: StreamBuilder<QuerySnapshot>(
         // Assumindo que a coleção onde os times foram importados se chama 'teams'
