@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "885441245906",
+    "project_id": "avaliacao-mvp20252",
+    "storage_bucket": "avaliacao-mvp20252.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:885441245906:android:7f155f381de953885ab30b",
+        "android_client_info": {
+          "package_name": "br.dev.yago.avaliacao_mvp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJaUnWgAXoVs2pGE6oyX0FGNb8w_OCeUE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
