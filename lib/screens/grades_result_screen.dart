@@ -35,7 +35,7 @@ class _GradesResultScreenState extends State<GradesResultScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                labelText: 'Buscar equipe por nome...',
+                labelText: 'Buscar por Equipe ou Nome do Aluno...',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -80,16 +80,36 @@ class _GradesResultScreenState extends State<GradesResultScreen> {
 
                 final allDocs = snapshot.data!.docs;
 
-                // FILTRAGEM LOCAl (Search Logic)
+                // --- NOVA LÓGICA DE FILTRAGEM ---
                 final filteredDocs = allDocs.where((doc) {
+                  // Se não houver busca, exibe tudo
+                  if (_searchText.isEmpty) return true;
+
                   final data = doc.data() as Map<String, dynamic>;
+
+                  // 1. Verifica Nome do Projeto
                   final projectName = (data['projectName'] ?? '')
                       .toString()
                       .toLowerCase();
+                  bool matchesTeam = projectName.contains(_searchText);
 
-                  // Se não houver texto, mostra tudo. Senão, verifica se contém o texto.
-                  if (_searchText.isEmpty) return true;
-                  return projectName.contains(_searchText);
+                  // 2. Verifica Nome dos Alunos
+                  bool matchesStudent = false;
+                  if (data['members'] != null) {
+                    final membersList = List.from(data['members']);
+                    for (var member in membersList) {
+                      final studentName = (member['name'] ?? '')
+                          .toString()
+                          .toLowerCase();
+                      if (studentName.contains(_searchText)) {
+                        matchesStudent = true;
+                        break; // Encontrou um aluno, já serve para exibir o grupo
+                      }
+                    }
+                  }
+
+                  // Retorna verdadeiro se encontrar no Time OU no Aluno
+                  return matchesTeam || matchesStudent;
                 }).toList();
 
                 if (filteredDocs.isEmpty) {
@@ -98,7 +118,7 @@ class _GradesResultScreenState extends State<GradesResultScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Icon(
-                          Icons.search_off,
+                          Icons.person_search,
                           size: 64,
                           color: Colors.grey,
                         ),
@@ -106,7 +126,7 @@ class _GradesResultScreenState extends State<GradesResultScreen> {
                         Text(
                           _searchText.isEmpty
                               ? "Nenhum grupo cadastrado."
-                              : "Nenhuma equipe encontrada para \"$_searchText\".",
+                              : "Nenhum resultado para \"$_searchText\".",
                           style: const TextStyle(color: Colors.grey),
                         ),
                       ],
