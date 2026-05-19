@@ -23,7 +23,7 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Avaliação MVP - Saúde do Homem',
+      title: 'Avaliação MVP',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

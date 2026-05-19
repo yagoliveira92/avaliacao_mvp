@@ -51,8 +51,8 @@ class _EvaluationFormScreenState extends State<EvaluationFormScreen> {
           (m) => StudentModel(
             name: m.name,
             matricula: m.matricula,
-            isPresent: true,
-            zeroGrade: false,
+            isPresent: m.isPresent,
+            zeroGrade: m.zeroGrade,
           ),
         )
         .toList();
@@ -107,6 +107,7 @@ class _EvaluationFormScreenState extends State<EvaluationFormScreen> {
 
           if (data['memberStatus'] != null) {
             final statusList = List.from(data['memberStatus']);
+            // Merge evaluation status into _localMembers
             for (var status in statusList) {
               final index = _localMembers.indexWhere(
                 (m) => m.matricula == status['matricula'],
@@ -114,6 +115,11 @@ class _EvaluationFormScreenState extends State<EvaluationFormScreen> {
               if (index != -1) {
                 _localMembers[index].isPresent = status['isPresent'] ?? true;
                 _localMembers[index].zeroGrade = status['zeroGrade'] ?? false;
+              } else {
+                // Member in evaluation but not in local team list (added later by another prof?)
+                _localMembers.add(
+                  StudentModel.fromMap(Map<String, dynamic>.from(status)),
+                );
               }
             }
           }
@@ -134,6 +140,71 @@ class _EvaluationFormScreenState extends State<EvaluationFormScreen> {
       total += _displayToWeighted(ctrl.text, weight);
     });
     return total;
+  }
+
+  void _showMemberDialog({int? index}) {
+    final nameCtrl = TextEditingController(
+      text: index != null ? _localMembers[index].name : "",
+    );
+    final matCtrl = TextEditingController(
+      text: index != null ? _localMembers[index].matricula : "",
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          index == null ? "Adicionar Integrante" : "Editar Integrante",
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: "Nome"),
+              textCapitalization: TextCapitalization.words,
+            ),
+            TextField(
+              controller: matCtrl,
+              decoration: const InputDecoration(labelText: "Matrícula"),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameCtrl.text.isEmpty || matCtrl.text.isEmpty) return;
+              setState(() {
+                if (index == null) {
+                  _localMembers.add(
+                    StudentModel(
+                      name: nameCtrl.text.trim(),
+                      matricula: matCtrl.text.trim(),
+                    ),
+                  );
+                } else {
+                  _localMembers[index].name = nameCtrl.text.trim();
+                  _localMembers[index].matricula = matCtrl.text.trim();
+                }
+              });
+              Navigator.pop(context);
+            },
+            child: const Text("Salvar"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _removeMember(int index) {
+    setState(() {
+      _localMembers.removeAt(index);
+    });
   }
 
   Future<void> _save() async {
@@ -185,7 +256,13 @@ class _EvaluationFormScreenState extends State<EvaluationFormScreen> {
     };
 
     try {
-      // Operação Assíncrona (Demorada)
+      // 1. Atualizar a lista de membros na coleção de equipes (Sincronização global)
+      await FirebaseFirestore.instance
+          .collection('teams')
+          .doc(widget.team.id)
+          .update({'members': memberStatusToSave});
+
+      // 2. Salvar a avaliação do professor
       await FirebaseFirestore.instance
           .collection('teams')
           .doc(widget.team.id)
@@ -202,7 +279,7 @@ class _EvaluationFormScreenState extends State<EvaluationFormScreen> {
       // Usa as variáveis guardadas lá em cima, não o 'context' diretamente
       messenger.showSnackBar(
         const SnackBar(
-          content: Text("Avaliação salva com sucesso!"),
+          content: Text("Avaliação e integrantes salvos com sucesso!"),
           backgroundColor: Colors.green,
         ),
       );
@@ -414,13 +491,23 @@ class _EvaluationFormScreenState extends State<EvaluationFormScreen> {
               const SizedBox(height: 32),
 
               // Gestão de Presença
-              const Text(
-                "Integrantes",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF0D47A1),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Integrantes",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0D47A1),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _showMemberDialog(),
+                    icon: const Icon(Icons.add),
+                    label: const Text("Adicionar"),
+                  ),
+                ],
               ),
               const Divider(),
 
@@ -437,15 +524,39 @@ class _EvaluationFormScreenState extends State<EvaluationFormScreen> {
                         : Colors.transparent,
                     child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                      title: Text(
-                        member.name,
-                        style: TextStyle(
-                          fontSize: 14,
-                          decoration: member.zeroGrade
-                              ? TextDecoration.lineThrough
-                              : null,
-                          color: member.zeroGrade ? Colors.red : Colors.black87,
-                        ),
+                      title: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              member.name,
+                              style: TextStyle(
+                                fontSize: 14,
+                                decoration: member.zeroGrade
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                                color: member.zeroGrade
+                                    ? Colors.red
+                                    : Colors.black87,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit, size: 18),
+                            onPressed: () => _showMemberDialog(index: index),
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              size: 18,
+                              color: Colors.red,
+                            ),
+                            onPressed: () => _removeMember(index),
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                        ],
                       ),
                       subtitle: Text(
                         "Mat: ${member.matricula}",

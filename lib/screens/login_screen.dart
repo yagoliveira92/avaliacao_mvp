@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const Text(
-                    "Avaliação Final - MVP Saúde do Homem",
+                    "Avaliação Final - MVP",
                     style: TextStyle(color: Colors.grey),
                   ),
                   const SizedBox(height: 32),
