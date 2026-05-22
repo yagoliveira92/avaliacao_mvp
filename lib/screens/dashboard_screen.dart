@@ -1,3 +1,5 @@
+import 'package:avaliacao_mvp/card_dashboard_widget.dart';
+import 'package:avaliacao_mvp/search_field_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:avaliacao_mvp/models/team_model.dart';
@@ -7,6 +9,7 @@ import 'package:avaliacao_mvp/screens/login_screen.dart';
 import 'package:avaliacao_mvp/screens/grades_result_screen.dart';
 import 'package:avaliacao_mvp/screens/add_team_screen.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardScreen extends StatefulWidget {
   final ProfessorModel professor;
@@ -54,16 +57,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildSearchField() {
-    return TextField(
-      controller: _searchController,
-      autofocus: true,
-      decoration: const InputDecoration(
-        hintText: "Pesquisar equipe ou líder...",
-        border: InputBorder.none,
-        hintStyle: TextStyle(color: Colors.white60),
-      ),
-      style: const TextStyle(color: Colors.white, fontSize: 16.0),
+    return SearchFieldWidget(
       onChanged: _updateSearchQuery,
+      searchController: _searchController,
     );
   }
 
@@ -87,11 +83,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       IconButton(icon: const Icon(Icons.search), onPressed: _startSearch),
       IconButton(
         icon: const Icon(Icons.logout),
-        onPressed: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-          );
+        onPressed: () async {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('professor_matricula');
+
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+            );
+          }
         },
       ),
     ];
@@ -173,31 +174,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   final isEvaluated =
                       evalSnapshot.hasData && evalSnapshot.data!.exists;
 
-                  return Card(
-                    elevation: 3,
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    child: ListTile(
-                      title: Text(
-                        team.projectName,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text('Líder: ${team.leaderName}'),
-                      trailing: isEvaluated
-                          ? const Icon(Icons.check_circle, color: Colors.green)
-                          : const Icon(Icons.pending, color: Colors.orange),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => EvaluationFormScreen(
-                              team: team,
-                              professorId: widget.professor.id,
-                              professorName: widget.professor.nome,
-                            ),
+                  return CardDashboardWidget(
+                    title: team.projectName,
+                    leaderName: team.leaderName,
+                    isEvaluated: isEvaluated,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EvaluationFormScreen(
+                            team: team,
+                            professorId: widget.professor.id,
+                            professorName: widget.professor.nome,
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   );
                 },
               );

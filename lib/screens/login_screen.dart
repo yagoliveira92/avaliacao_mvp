@@ -1,6 +1,7 @@
 import 'package:avaliacao_mvp/screens/dashboard_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/professor_model.dart';
 
@@ -16,21 +17,65 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String _error = '';
 
-  Future<void> _login() async {
+  static const String _kMatriculaKey = 'professor_matricula';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPersistentLogin();
+  }
+
+  Future<void> _checkPersistentLogin() async {
     setState(() {
       _isLoading = true;
-      _error = '';
     });
 
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedMatricula = prefs.getString(_kMatriculaKey);
+
+      if (savedMatricula != null && savedMatricula.isNotEmpty) {
+        // Tenta logar automaticamente com a matrícula salva
+        await _performLogin(savedMatricula);
+      }
+    } catch (e) {
+      debugPrint('Erro ao verificar login persistente: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _login() async {
     final matricula = _matriculaController.text.trim();
     if (matricula.isEmpty) {
       setState(() {
-        _isLoading = false;
         _error = 'Digite sua matrícula.';
       });
       return;
     }
 
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
+
+    await _performLogin(matricula, saveToPrefs: true);
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _performLogin(
+    String matricula, {
+    bool saveToPrefs = false,
+  }) async {
     try {
       // Verifica na coleção de professores permitidos
       // A coleção deve usar a matrícula como ID do documento para facilitar
@@ -40,6 +85,11 @@ class _LoginScreenState extends State<LoginScreen> {
           .get();
 
       if (doc.exists) {
+        if (saveToPrefs) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_kMatriculaKey, matricula);
+        }
+
         final professor = ProfessorModel.fromFirestore(doc);
         if (mounted) {
           Navigator.pushReplacement(
@@ -54,8 +104,6 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       setState(() => _error = 'Erro de conexão: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 

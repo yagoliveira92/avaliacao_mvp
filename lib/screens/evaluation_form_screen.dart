@@ -26,11 +26,10 @@ class _EvaluationFormScreenState extends State<EvaluationFormScreen> {
 
   // PESOS (Weights) definidos no Edital
   final Map<String, double> _weights = {
-    'Funcionalidade do Protótipo': 2.5,
+    'Funcionalidade do Protótipo': 3.0,
     'Design e Usabilidade': 2.0,
-    'Impacto e Engajamento': 2.0,
-    'Documentação Completa': 1.5,
-    'Apresentação Final': 1.5,
+    'Impacto e Engajamento': 2.5,
+    'Apresentação Final': 2.0,
     'Trabalho em Equipe e Adaptação': 0.5,
   };
 
@@ -298,8 +297,9 @@ class _EvaluationFormScreenState extends State<EvaluationFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading)
+    if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return Scaffold(
       appBar: AppBar(
