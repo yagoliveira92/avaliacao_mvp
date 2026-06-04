@@ -1,3 +1,4 @@
+import 'package:avaliacao_mvp/models/student_model.dart';
 import 'package:avaliacao_mvp/models/team_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -315,7 +316,11 @@ class _TeamGradeCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ...team.members.map((member) {
+                    ...(List<StudentModel>.from(team.members)
+                          ..sort((a, b) => a.name
+                              .toLowerCase()
+                              .compareTo(b.name.toLowerCase())))
+                        .map((member) {
                       final zeroedBy = studentsZeroedBy[member.matricula];
                       final isZeroed = zeroedBy != null && zeroedBy.isNotEmpty;
 
@@ -374,15 +379,14 @@ class _TeamGradeCard extends StatelessWidget {
                                         ? "0.0"
                                         : finalScore5.toStringAsFixed(2)),
                               style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: isZeroed ? Colors.red : Colors.black87,
-                                fontSize: 16,
-                              ),
+                                  fontWeight: FontWeight.bold,
+                                  color: isZeroed ? Colors.red : Colors.black87,
+                                  fontSize: 16),
                             ),
                           ],
                         ),
                       );
-                    }).toList(),
+                    }),
                   ],
                 ),
               ),
